@@ -30,7 +30,7 @@ public class OutsideCoverageException extends GeoWebCacheException {
         super("Zoom level was " + index[2] + ", but value has to be in ["+firstLevel+","+lastLevel+ "]");
     }
 
-    public OutsideCoverageException(long[] index, long[] coverage) {
+	public OutsideCoverageException(long[] index, long[] coverage) {
         super("Coverage [minx,miny,maxx,maxy] is " + Arrays.toString(coverage) + ", index [x,y,z] is " + Arrays.toString(index));
     }
 

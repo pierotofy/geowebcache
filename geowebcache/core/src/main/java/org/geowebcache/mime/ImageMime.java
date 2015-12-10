@@ -52,6 +52,9 @@ public class ImageMime extends MimeType {
     public static final ImageMime dds = 
         new ImageMime("image/dds", "dds", "dds", "image/dds", false, false, false);
     
+    public static final ImageMime bil = 
+            new ImageMime("image/bil", "bil", "bil", "image/bil", false, false, false);
+    
     private ImageMime(String mimeType, String fileExtension, 
             String internalName, String format, boolean tiled,
             boolean alphaChannel, boolean alphaBit) {
@@ -91,6 +94,8 @@ public class ImageMime extends MimeType {
             return png_24;
         } else if (tmpStr.equalsIgnoreCase("png;%20mode=24bit")) {
             return png_24;
+        } else if (tmpStr.equalsIgnoreCase("bil")) {
+            return bil;
         }
         return null;
     }
@@ -122,6 +127,8 @@ public class ImageMime extends MimeType {
             return png24;
         } else if (fileExtension.equalsIgnoreCase("png_24")) {
             return png_24;
+        } else if (fileExtension.equalsIgnoreCase("bil")) {
+            return bil;
         }
         return null;
     }

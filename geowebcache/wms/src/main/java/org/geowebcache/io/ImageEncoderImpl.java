@@ -48,338 +48,367 @@ import com.sun.imageio.plugins.png.PNGImageWriter;
 import com.sun.media.imageioimpl.plugins.clib.CLibImageWriter;
 
 /**
- * Class implementing the ImageEncoder interface, the user should only create a new bean for instantiating a new encoder object.
+ * Class implementing the ImageEncoder interface, the user should only create a
+ * new bean for instantiating a new encoder object.
  */
 public class ImageEncoderImpl implements ImageEncoder {
 
-    /**
-     * Logger used
-     */
-    private static final Logger LOGGER = Logger.getLogger(ImageEncoderImpl.class);
+	/**
+	 * Logger used
+	 */
+	private static final Logger LOGGER = Logger
+			.getLogger(ImageEncoderImpl.class);
 
-    /**
-     * Default string used for exceptions
-     */
-    public static final String OPERATION_NOT_SUPPORTED = "Operation not supported";
+	/**
+	 * Default string used for exceptions
+	 */
+	public static final String OPERATION_NOT_SUPPORTED = "Operation not supported";
 
-    /**Boolean indicating is aggressive outputstream is supported*/
-    private final boolean isAggressiveOutputStreamSupported;
-    /**Supported Mimetypes*/
-    private final List<String> supportedMimeTypes;
-    /**ImageReaderSpi object used*/
-    private ImageWriterSpi spi;
-    /** Map containing the input parameters used by the WriteHelper object*/
-    private Map<String, String> inputParams;
-    /**Helper object used for preparing Image and ImageWriteParam for writing the image*/
-    private WriteHelper helper;
+	/** Boolean indicating is aggressive outputstream is supported */
+	private final boolean isAggressiveOutputStreamSupported;
+	/** Supported Mimetypes */
+	private final List<String> supportedMimeTypes;
+	/** ImageReaderSpi object used */
+	private ImageWriterSpi spi;
+	/** Map containing the input parameters used by the WriteHelper object */
+	private Map<String, String> inputParams;
+	/**
+	 * Helper object used for preparing Image and ImageWriteParam for writing
+	 * the image
+	 */
+	private WriteHelper helper;
 
-    /**
-     * This enum is used for preparing the image to write (prepareImage()) and the related ImageWriteParam(prepareParams()).
-     */
-    public enum WriteHelper {
-        PNG("image/png", "image/png8", "image/png; mode=8bit", "image/png24",
-                "image/png; mode=24bit", "image/png;%20mode=24bit") {
-            public ImageWriteParam prepareParameters(ImageWriter writer, String compression,
-                    boolean compressUsed, float compressionRate) {
-                ImageWriteParam params = null;
+	/**
+	 * This enum is used for preparing the image to write (prepareImage()) and
+	 * the related ImageWriteParam(prepareParams()).
+	 */
+	public enum WriteHelper {
+		PNG("image/png", "image/png8", "image/png; mode=8bit", "image/png24",
+				"image/png; mode=24bit", "image/png;%20mode=24bit") {
+			public ImageWriteParam prepareParameters(ImageWriter writer,
+					String compression, boolean compressUsed,
+					float compressionRate) {
+				ImageWriteParam params = null;
 
-                if (writer instanceof CLibImageWriter) {
-                    params = writer.getDefaultWriteParam();
-                    // Define compression mode
-                    params.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-                    if (compressUsed) {
-                        // best compression
-                        params.setCompressionType(compression);
-                    }
-                    if (compressionRate > -1) {
-                        // we can control quality here
-                        params.setCompressionQuality(compressionRate);
-                    }
-                } else if (writer instanceof PNGImageWriter) {
-                    params = new PNGImageWriteParam();
-                    // Define compression mode
-                    params.setCompressionMode(ImageWriteParam.MODE_DEFAULT);
-                }
-                return params;
-            }
+				if (writer instanceof CLibImageWriter) {
+					params = writer.getDefaultWriteParam();
+					// Define compression mode
+					params.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+					if (compressUsed) {
+						// best compression
+						params.setCompressionType(compression);
+					}
+					if (compressionRate > -1) {
+						// we can control quality here
+						params.setCompressionQuality(compressionRate);
+					}
+				} else if (writer instanceof PNGImageWriter) {
+					params = new PNGImageWriteParam();
+					// Define compression mode
+					params.setCompressionMode(ImageWriteParam.MODE_DEFAULT);
+				}
+				return params;
+			}
 
-            public RenderedImage prepareImage(RenderedImage image, MimeType type) {
-                boolean isPNG8 = type == ImageMime.png8;
-                if (isPNG8) {
-                    return applyPalette(image);
-                }
-                return image;
-            }
-        },
-        JPEG("image/jpeg") {
-            protected ImageWriteParam prepareParameters(ImageWriter writer, String compression,
-                    boolean compressUsed, float compressionRate) {
-                ImageWriteParam params = writer.getDefaultWriteParam();
-                params.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-                if (compressUsed) {
-                    // Lossy compression.
-                    params.setCompressionType(compression);
-                }
-                if (compressionRate > -1) {
-                    // we can control quality here
-                    params.setCompressionQuality(compressionRate);
-                }
-                // If JPEGWriteParams, additional parameters are set
-                if (params instanceof JPEGImageWriteParam) {
-                    final JPEGImageWriteParam jpegParams = (JPEGImageWriteParam) params;
-                    jpegParams.setOptimizeHuffmanTables(true);
-                    try {
-                        jpegParams.setProgressiveMode(JPEGImageWriteParam.MODE_DEFAULT);
-                    } catch (UnsupportedOperationException e) {
-                        // Logged Exception
-                        LOGGER.error(e.getMessage(), e);
-                    }
+			public RenderedImage prepareImage(RenderedImage image, MimeType type) {
+				boolean isPNG8 = type == ImageMime.png8;
+				if (isPNG8) {
+					return applyPalette(image);
+				}
+				return image;
+			}
+		},
+		JPEG("image/jpeg") {
+			protected ImageWriteParam prepareParameters(ImageWriter writer,
+					String compression, boolean compressUsed,
+					float compressionRate) {
+				ImageWriteParam params = writer.getDefaultWriteParam();
+				params.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+				if (compressUsed) {
+					// Lossy compression.
+					params.setCompressionType(compression);
+				}
+				if (compressionRate > -1) {
+					// we can control quality here
+					params.setCompressionQuality(compressionRate);
+				}
+				// If JPEGWriteParams, additional parameters are set
+				if (params instanceof JPEGImageWriteParam) {
+					final JPEGImageWriteParam jpegParams = (JPEGImageWriteParam) params;
+					jpegParams.setOptimizeHuffmanTables(true);
+					try {
+						jpegParams
+								.setProgressiveMode(JPEGImageWriteParam.MODE_DEFAULT);
+					} catch (UnsupportedOperationException e) {
+						// Logged Exception
+						LOGGER.error(e.getMessage(), e);
+					}
 
-                    params = jpegParams;
-                }
-                return params;
-            }
-        },
-        GIF("image/gif"){
-            public RenderedImage prepareImage(RenderedImage image, MimeType type) {
-                return applyPalette(image);
-            }
-            
-        }, TIFF("image/tiff"), BMP("image/bmp");
+					params = jpegParams;
+				}
+				return params;
+			}
+		},
+		GIF("image/gif") {
+			public RenderedImage prepareImage(RenderedImage image, MimeType type) {
+				return applyPalette(image);
+			}
 
-        private String[] formatNames;
+		},
+		TIFF("image/tiff"), BMP("image/bmp");
 
-        WriteHelper(String... formatNames) {
-            this.formatNames = formatNames;
-        }
+		private String[] formatNames;
 
-        public ImageWriteParam prepareParams(Map<String, String> inputParams, ImageWriter writer) {
-            // Selection of the compression type
-            String compression = inputParams.get("COMPRESSION");
-            // Boolean indicating if compression is present
-            boolean compressUsed = compression != null && !compression.isEmpty()
-                    && !compression.equalsIgnoreCase("null");
-            // Selection of the compression rate
-            String compressionRateValue = inputParams.get("COMPRESSION_RATE");
-            // Initial value for the compression rate
-            float compressionRate = -1;
-            // Evaluation of the compression rate
-            if (compressionRateValue != null) {
-                try {
-                    compressionRate = Float.parseFloat(compressionRateValue);
-                } catch (NumberFormatException e) {
-                    // Do nothing and skip compression rate
-                }
-            }
-            // Creation of the ImageWriteParams
-            ImageWriteParam params = prepareParameters(writer, compression, compressUsed,
-                    compressionRate);
+		WriteHelper(String... formatNames) {
+			this.formatNames = formatNames;
+		}
 
-            return params;
-        }
+		public ImageWriteParam prepareParams(Map<String, String> inputParams,
+				ImageWriter writer) {
+			// Selection of the compression type
+			String compression = inputParams.get("COMPRESSION");
+			// Boolean indicating if compression is present
+			boolean compressUsed = compression != null
+					&& !compression.isEmpty()
+					&& !compression.equalsIgnoreCase("null");
+			// Selection of the compression rate
+			String compressionRateValue = inputParams.get("COMPRESSION_RATE");
+			// Initial value for the compression rate
+			float compressionRate = -1;
+			// Evaluation of the compression rate
+			if (compressionRateValue != null) {
+				try {
+					compressionRate = Float.parseFloat(compressionRateValue);
+				} catch (NumberFormatException e) {
+					// Do nothing and skip compression rate
+				}
+			}
+			// Creation of the ImageWriteParams
+			ImageWriteParam params = prepareParameters(writer, compression,
+					compressUsed, compressionRate);
 
-        protected ImageWriteParam prepareParameters(ImageWriter writer, String compression,
-                boolean compressUsed, float compressionRate) {
-            // Parameters creation
-            ImageWriteParam params = writer.getDefaultWriteParam();
-            params.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-            if (compressUsed) {
-                // best compression
-                params.setCompressionType(compression);
-            }
-            if (compressionRate > -1) {
-                // we can control quality here
-                params.setCompressionQuality(compressionRate);
-            }
+			return params;
+		}
 
-            return params;
-        }
+		protected ImageWriteParam prepareParameters(ImageWriter writer,
+				String compression, boolean compressUsed, float compressionRate) {
+			// Parameters creation
+			ImageWriteParam params = writer.getDefaultWriteParam();
+			params.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+			if (compressUsed) {
+				// best compression
+				params.setCompressionType(compression);
+			}
+			if (compressionRate > -1) {
+				// we can control quality here
+				params.setCompressionQuality(compressionRate);
+			}
 
-        public RenderedImage prepareImage(RenderedImage image, MimeType type) {
-            return image;
-        }
+			return params;
+		}
 
-        private boolean isFormatNameAccepted(String formatName) {
-            boolean accepted = false;
-            for (String format : formatNames) {
-                accepted = format.equalsIgnoreCase(formatName);
-                if (accepted) {
-                    break;
-                }
-            }
-            return accepted;
-        }
+		public RenderedImage prepareImage(RenderedImage image, MimeType type) {
+			return image;
+		}
 
-        public static WriteHelper getWriteHelperForName(String formatName) {
+		private boolean isFormatNameAccepted(String formatName) {
+			boolean accepted = false;
+			for (String format : formatNames) {
+				accepted = format.equalsIgnoreCase(formatName);
+				if (accepted) {
+					break;
+				}
+			}
+			return accepted;
+		}
 
-            if (PNG.isFormatNameAccepted(formatName)) {
-                return PNG;
-            } else if (JPEG.isFormatNameAccepted(formatName)) {
-                return JPEG;
-            } else if (GIF.isFormatNameAccepted(formatName)) {
-                return GIF;
-            } else if (TIFF.isFormatNameAccepted(formatName)) {
-                return TIFF;
-            } else if (BMP.isFormatNameAccepted(formatName)) {
-                return BMP;
-            }
-            return null;
-        }
-    }
+		public static WriteHelper getWriteHelperForName(String formatName) {
 
-    /**
-     * Encodes the selected image with the defined output object. The user can set the aggressive outputStream if supported.
-     * 
-     * @param image Image to write.
-     * @param destination Destination object where the image is written.
-     * @param aggressiveOutputStreamOptimization Parameter used if aggressive outputStream optimization must be used.
-     * @throws IOException
-     */
-    public void encode(RenderedImage image, Object destination,
-            boolean aggressiveOutputStreamOptimization, MimeType type, Map<String, ?> map)  throws Exception{
+			if (PNG.isFormatNameAccepted(formatName)) {
+				return PNG;
+			} else if (JPEG.isFormatNameAccepted(formatName)) {
+				return JPEG;
+			} else if (GIF.isFormatNameAccepted(formatName)) {
+				return GIF;
+			} else if (TIFF.isFormatNameAccepted(formatName)) {
+				return TIFF;
+			} else if (BMP.isFormatNameAccepted(formatName)) {
+				return BMP;
+			}
+			return null;
+		}
+	}
 
-        if (!isAggressiveOutputStreamSupported() && aggressiveOutputStreamOptimization) {
-            throw new UnsupportedOperationException(OPERATION_NOT_SUPPORTED);
-        }
+	/**
+	 * Encodes the selected image with the defined output object. The user can
+	 * set the aggressive outputStream if supported.
+	 * 
+	 * @param image
+	 *            Image to write.
+	 * @param destination
+	 *            Destination object where the image is written.
+	 * @param aggressiveOutputStreamOptimization
+	 *            Parameter used if aggressive outputStream optimization must be
+	 *            used.
+	 * @throws IOException
+	 */
+	public void encode(RenderedImage image, Object destination,
+			boolean aggressiveOutputStreamOptimization, MimeType type,
+			Map<String, ?> map) throws Exception {
 
-        // Selection of the first priority writerSpi
-        ImageWriterSpi newSpi = getWriterSpi();
+		if (!isAggressiveOutputStreamSupported()
+				&& aggressiveOutputStreamOptimization) {
+			throw new UnsupportedOperationException(OPERATION_NOT_SUPPORTED);
+		}
 
-        if (newSpi != null) {
-            // Creation of the associated Writer
-            ImageWriter writer = null;
-            ImageOutputStream stream = null;
-            try {
-                writer = newSpi.createWriterInstance();
-                // Check if the input object is an OutputStream
-                if (destination instanceof OutputStream) {
-                    // Use of the ImageOutputStreamAdapter
-                    if (isAggressiveOutputStreamSupported()) {
-                        stream = new ImageOutputStreamAdapter((OutputStream) destination);
-                    } else {
-                        stream = new MemoryCacheImageOutputStream((OutputStream) destination);
-                    }
+		// Selection of the first priority writerSpi
+		ImageWriterSpi newSpi = getWriterSpi();
 
-                    // Preparation of the ImageWriteParams
-                    ImageWriteParam params = null;
-                    RenderedImage finalImage = image;
-                    if (helper != null) {
-                        params = helper.prepareParams(inputParams, writer);
-                        finalImage = helper.prepareImage(image, type);
-                    }
+		if (newSpi != null) {
+			// Creation of the associated Writer
+			ImageWriter writer = null;
+			ImageOutputStream stream = null;
+			try {
+				writer = newSpi.createWriterInstance();
+				// Check if the input object is an OutputStream
+				if (destination instanceof OutputStream) {
+					// Use of the ImageOutputStreamAdapter
+					if (isAggressiveOutputStreamSupported()) {
+						stream = new ImageOutputStreamAdapter(
+								(OutputStream) destination);
+					} else {
+						stream = new MemoryCacheImageOutputStream(
+								(OutputStream) destination);
+					}
 
-                    // Image writing
-                    writer.setOutput(stream);
-                    writer.write(null, new IIOImage(finalImage, null, null), params);
-                } else {
-                    throw new IllegalArgumentException("Wrong output object");
-                }
-            } catch (Exception e) {                
-                LOGGER.error(e.getMessage(), e);
-                throw e;
-            } finally {
-                // Writer disposal
-                if (writer != null) {
-                    writer.dispose();
-                }
-                // Stream closure
-                if (stream != null) {
-                    try {
-                        stream.close();
-                    } catch (IOException e) {
-                        LOGGER.error(e.getMessage(), e);
-                    }
-                    stream = null;
-                }
-            }
-        }
-    }
+					// Preparation of the ImageWriteParams
+					ImageWriteParam params = null;
+					RenderedImage finalImage = image;
+					if (helper != null) {
+						params = helper.prepareParams(inputParams, writer);
+						finalImage = helper.prepareImage(image, type);
+					}
 
-    /**
-     * Returns the ImageSpiWriter associated to
-     * 
-     * @return
-     */
-    ImageWriterSpi getWriterSpi() {
-        return spi;
-    }
+					// Image writing
+					writer.setOutput(stream);
+					writer.write(null, new IIOImage(finalImage, null, null),
+							params);
+				} else {
+					throw new IllegalArgumentException("Wrong output object");
+				}
+			} catch (Exception e) {
+				LOGGER.error(e.getMessage(), e);
+				throw e;
+			} finally {
+				// Writer disposal
+				if (writer != null) {
+					writer.dispose();
+				}
+				// Stream closure
+				if (stream != null) {
+					try {
+						stream.close();
+					} catch (IOException e) {
+						LOGGER.error(e.getMessage(), e);
+					}
+					stream = null;
+				}
+			}
+		}
+	}
 
-    /**
-     * Returns all the supported MimeTypes
-     * 
-     * @return supportedMimeTypes List of all the supported Mime Types
-     */
-    public List<String> getSupportedMimeTypes() {
-        return supportedMimeTypes;
-    }
+	/**
+	 * Returns the ImageSpiWriter associated to
+	 * 
+	 * @return
+	 */
+	ImageWriterSpi getWriterSpi() {
+		return spi;
+	}
 
-    /**
-     * Indicates if optimization on OutputStream can be used
-     * 
-     * @return isAggressiveOutputStreamSupported Boolean indicating if the selected encoder supports an aggressive output stream optimization
-     */
-    public boolean isAggressiveOutputStreamSupported() {
-        return isAggressiveOutputStreamSupported;
-    }
+	/**
+	 * Returns all the supported MimeTypes
+	 * 
+	 * @return supportedMimeTypes List of all the supported Mime Types
+	 */
+	public List<String> getSupportedMimeTypes() {
+		return supportedMimeTypes;
+	}
 
-    /**
-     * Creates a new Instance of ImageEncoder supporting or not OutputStream optimization, with the defined MimeTypes and Spi classes.
-     * 
-     * @param aggressiveOutputStreamOptimization
-     * @param supportedMimeTypes
-     * @param writerSpi
-     */
-    public ImageEncoderImpl(boolean aggressiveOutputStreamOptimization,
-            List<String> supportedMimeTypes, List<String> writerSpi, Map<String, String> inputParams,ImageIOInitializer initializer) {
-        this.isAggressiveOutputStreamSupported = aggressiveOutputStreamOptimization;
-        this.supportedMimeTypes = new ArrayList<String>(supportedMimeTypes);
-        this.inputParams = inputParams;
-        // Get the IIORegistry if needed
-        IIORegistry theRegistry = initializer.getRegistry();
-        // Checks for each Spi class if it is present and then it is added to the list.
-        for (String spi : writerSpi) {
-            try {
+	/**
+	 * Indicates if optimization on OutputStream can be used
+	 * 
+	 * @return isAggressiveOutputStreamSupported Boolean indicating if the
+	 *         selected encoder supports an aggressive output stream
+	 *         optimization
+	 */
+	public boolean isAggressiveOutputStreamSupported() {
+		return isAggressiveOutputStreamSupported;
+	}
 
-                Class<?> clazz = Class.forName(spi);
-                ImageWriterSpi writer = (ImageWriterSpi) theRegistry
-                        .getServiceProviderByClass(clazz);
-                if (writer != null) {
-                    this.spi = writer;
-                    break;
-                }
-            } catch (ClassNotFoundException e) {
-                LOGGER.error(e.getMessage(), e);
-            }
+	/**
+	 * Creates a new Instance of ImageEncoder supporting or not OutputStream
+	 * optimization, with the defined MimeTypes and Spi classes.
+	 * 
+	 * @param aggressiveOutputStreamOptimization
+	 * @param supportedMimeTypes
+	 * @param writerSpi
+	 */
+	public ImageEncoderImpl(boolean aggressiveOutputStreamOptimization,
+			List<String> supportedMimeTypes, List<String> writerSpi,
+			Map<String, String> inputParams, ImageIOInitializer initializer) {
+		this.isAggressiveOutputStreamSupported = aggressiveOutputStreamOptimization;
+		this.supportedMimeTypes = new ArrayList<String>(supportedMimeTypes);
+		this.inputParams = inputParams;
+		// Get the IIORegistry if needed
+		IIORegistry theRegistry = initializer.getRegistry();
+		// Checks for each Spi class if it is present and then it is added to
+		// the list.
+		for (String spi : writerSpi) {
+			try {
 
-        }
+				Class<?> clazz = Class.forName(spi);
+				ImageWriterSpi writer = (ImageWriterSpi) theRegistry
+						.getServiceProviderByClass(clazz);
+				if (writer != null) {
+					this.spi = writer;
+					break;
+				}
+			} catch (ClassNotFoundException e) {
+				LOGGER.error(e.getMessage(), e);
+			}
 
-        // Selection of the helper object associated to the following format
-        helper = WriteHelper.getWriteHelperForName(supportedMimeTypes.get(0));
+		}
 
-    }
+		// Selection of the helper object associated to the following format
+		helper = WriteHelper.getWriteHelperForName(supportedMimeTypes.get(0));
 
-    /**
-     * Returns the WriteHelper object used
-     */
-    protected WriteHelper getHelper() {
-        return helper;
-    }
+	}
 
-    private static RenderedImage applyPalette(RenderedImage canvas) {
-        if (!(canvas.getColorModel() instanceof IndexColorModel)) {
-            // try to force a RGBA setup
-            ImageWorker imageWorker = new ImageWorker(canvas);
-            RenderedImage image = imageWorker.rescaleToBytes().forceComponentColorModel()
-                    .getRenderedImage();
-            ColorIndexer indexer = new Quantizer(256).subsample().buildColorIndexer(image);
+	/**
+	 * Returns the WriteHelper object used
+	 */
+	protected WriteHelper getHelper() {
+		return helper;
+	}
 
-            // if we have an indexer transform the image
-            if (indexer != null) {
-                image = new ImageWorker(image).colorIndex(indexer).getRenderedImage();
-            }
-            return image;
-        }
-        return canvas;
+	private static RenderedImage applyPalette(RenderedImage canvas) {
+		if (!(canvas.getColorModel() instanceof IndexColorModel)) {
+			// try to force a RGBA setup
+			ImageWorker imageWorker = new ImageWorker(canvas);
+			RenderedImage image = imageWorker.rescaleToBytes()
+					.forceComponentColorModel().getRenderedImage();
+			ColorIndexer indexer = new Quantizer(256).subsample()
+					.buildColorIndexer(image);
 
-    }
+			// if we have an indexer transform the image
+			if (indexer != null) {
+				image = new ImageWorker(image).colorIndex(indexer)
+						.getRenderedImage();
+			}
+			return image;
+		}
+		return canvas;
+
+	}
 }

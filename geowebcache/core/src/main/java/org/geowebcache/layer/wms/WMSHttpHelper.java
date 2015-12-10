@@ -184,6 +184,7 @@ public class WMSHttpHelper extends WMSSourceHelper {
 
             // Check that we're not getting an error MIME back.
             String responseMime = getMethod.getResponseHeader("Content-Type").getValue();
+            
             if (responseCode != 204 && responseMime != null
                     && !mimeStringCheck(requestMime, responseMime)) {
                 String message = null;

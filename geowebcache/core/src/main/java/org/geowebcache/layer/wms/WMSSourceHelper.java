@@ -130,7 +130,10 @@ public abstract class WMSSourceHelper {
     }
 
     protected boolean mimeStringCheck(String requestMime, String responseMime) {
-        if (responseMime.equalsIgnoreCase(requestMime)) {
+        // image/bil and application/bil32 are the same
+        if (requestMime.equalsIgnoreCase("application/bil32") && responseMime.equalsIgnoreCase("image/bil")){
+        	return true;
+        }else if (responseMime.equalsIgnoreCase(requestMime)) {
             return true;
         } else if (responseMime.startsWith(requestMime)) {
             return true;

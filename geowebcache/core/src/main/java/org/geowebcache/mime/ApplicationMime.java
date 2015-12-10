@@ -27,7 +27,7 @@ import com.google.common.collect.Maps;
 public class ApplicationMime extends MimeType {
     
     protected boolean vector;
-
+    
     public static final ApplicationMime bil16 = new ApplicationMime(
             "application/bil16", "bil16", "bil16",
             "application/bil16", false);
